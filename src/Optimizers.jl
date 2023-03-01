@@ -1,19 +1,56 @@
 module Optimizers
 
-export optimize
+export optimize, OpenOptimizer, CompositeOptimizer, forward, backward!
 
 using ..Problems
 using ..LensCats
 using Zygote
 
-
-#OpenOptimizer = Lens{Int, Function}
+mutable struct OpenOptimizer
+    dom::Int
+    codom::Int
+    state::Tuple # (prev_x0, prev_λ0, λ)
+    p::Function
+end
 function OpenOptimizer(p::EqConstrainedProb)
-    @assert p.f.dom == p.h.dom
-    n = p.f.dom
-    m = p.h.codom
+    cd = p.f.dom
+    d = p.h.codom
+    state = (zeros(cd), zeros(d), zeros(cd))
+    return OpenOptimizer(d, cd, state, Problems.open(p))
+end
 
-    
+mutable struct CompositeOptimizer
+    os::Vector{OpenOptimizer}
+end
+
+function forward(o::OpenOptimizer, u)
+    return optimize(o.p(o.state[3],u), o.state[1]; λ₀=o.state[2])[1]
+end
+
+function backward!(o::OpenOptimizer, u, λ)
+    o.state[3] = λ
+    x,λ_pb = optimize(o.p(o.state[3], u), o.state[1]; λ₀=o.state[2])
+    o.state[1] = x
+    o.state[2] = λ_pb
+    return λ_pb
+end
+
+function forward(os::CompositeOptimizer, u)
+    reduce((x,o) -> forward(o, x), os; init=u)
+end
+
+function backward!(os::CompositeOptimizer, u, λ)
+    # Make a list of each get output
+    xs = [u]
+    for o in os
+        x = xs[end]
+        push!(xs, forward(o, x))
+    end
+
+    for (o,x) in zip(reverse(os), reverse(xs))
+        λ = backward!(o, x, λ)
+    end
+    return λ
 end
 
 function optimize(p::UnconstrainedProb, x₀; kwargs...)
