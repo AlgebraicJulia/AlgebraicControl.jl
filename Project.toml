@@ -1,0 +1,7 @@
+name = "AlgebraicControl"
+uuid = "18d58c96-aab3-4c1a-b16d-46236d122ca7"
+authors = ["tylerhanks <teh.hanks@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
