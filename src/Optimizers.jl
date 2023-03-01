@@ -1,6 +1,7 @@
 module Optimizers
 
-export optimize, OpenOptimizer, CompositeOptimizer, forward, backward!
+export optimize, OpenOptimizer, CompositeOptimizer, forward, backward!,
+    primal_value, dual_value, params, compose
 
 using ..Problems
 using ..LensCats
@@ -9,27 +10,49 @@ using Zygote
 mutable struct OpenOptimizer
     dom::Int
     codom::Int
-    state::Tuple # (prev_x0, prev_λ0, λ)
+    state::Vector{Vector} # (prev_x0, prev_λ0, λ)
     p::Function
 end
-function OpenOptimizer(p::EqConstrainedProb)
-    cd = p.f.dom
-    d = p.h.codom
-    state = (zeros(cd), zeros(d), zeros(cd))
+function OpenOptimizer(p::Problem)
+    cd = objective(p).dom
+    d = constraints(p).codom
+    state = [zeros(cd), zeros(d), zeros(cd)]
     return OpenOptimizer(d, cd, state, Problems.open(p))
 end
+primal_value(o::OpenOptimizer) = o.state[1]
+dual_value(o::OpenOptimizer) = o.state[2]
+params(o::OpenOptimizer) = o.state[3]
 
 mutable struct CompositeOptimizer
     os::Vector{OpenOptimizer}
 end
+primal_values(os::CompositeOptimizer) = [primal_value(o) for o in os.os]
 
-function forward(o::OpenOptimizer, u)
-    return optimize(o.p(o.state[3],u), o.state[1]; λ₀=o.state[2])[1]
+
+function compose(o1::OpenOptimizer, o2::OpenOptimizer)
+    @assert o1.codom == o2.dom
+    return CompositeOptimizer([o1,o2])
+end
+function compose(o1::CompositeOptimizer, o2::OpenOptimizer)
+    @assert o1.os[end].codom == o2.dom
+    return CompositeOptimizer(vcat(o1.os, o2))
+end
+function compose(o1::OpenOptimizer, o2::CompositeOptimizer)
+    @assert o1.codom == o2.os[1].dom
+    return CompositeOptimizer(vcat(o1, o2.os))
+end
+function compose(o1::CompositeOptimizer, o2::CompositeOptimizer)
+    @assert o1.os[end].codom == o2.os[1].dom
+    return CompositieOptimizer(vcat(o1.os, o2.os))
 end
 
-function backward!(o::OpenOptimizer, u, λ)
+function forward(o::OpenOptimizer, u; kwargs...)
+    return optimize(o.p(o.state[3],u), o.state[1]; dual_init=o.state[2], kwargs...)[1]
+end
+
+function backward!(o::OpenOptimizer, u, λ; kwargs...)
     o.state[3] = λ
-    x,λ_pb = optimize(o.p(o.state[3], u), o.state[1]; λ₀=o.state[2])
+    x,λ_pb = optimize(o.p(o.state[3], u), o.state[1]; dual_init=o.state[2], kwargs...)
     o.state[1] = x
     o.state[2] = λ_pb
     return λ_pb
@@ -41,13 +64,13 @@ end
 
 function backward!(os::CompositeOptimizer, u, λ)
     # Make a list of each get output
-    xs = [u]
-    for o in os
+    xs = vcat(u, primal_values(os))
+    #=for o in os.os
         x = xs[end]
         push!(xs, forward(o, x))
-    end
+    end=#
 
-    for (o,x) in zip(reverse(os), reverse(xs))
+    for (o,x) in zip(reverse(os.os), reverse(xs))
         λ = backward!(o, x, λ)
     end
     return λ
@@ -70,7 +93,7 @@ end
 # Project a vector onto the non-negative orthant
 project(y::Vector{Float64}) = map(x -> x < 0 ? 0 : x, y)
 
-function GD(f::Function, x₀::Vector{Float64}; γ=0.001, num_iters=10000, stopping_criterion=0.0001)
+function GD(f::Function, x₀::Vector{Float64}; γ=0.001, max_iters=10000, stopping_criterion=0.0001)
     x = x₀
     ϵ = stopping_criterion
     for k in 1:num_iters
@@ -83,10 +106,10 @@ function GD(f::Function, x₀::Vector{Float64}; γ=0.001, num_iters=10000, stopp
     return x
 end
 
-function ec_uzawa(f, h, x₀, num_constraints; step_size=0.001, max_iters=10000, stopping_criterion=0.0001, λ₀=nothing, tol=0.00001)
+function ec_uzawa(f, h, x₀, num_constraints; step_size=0.001, max_iters=10000, stopping_criterion=0.0001, dual_init=nothing, tol=0.00001)
     λ = zeros(num_constraints)
-    if λ₀ !== nothing
-        λ = λ₀
+    if dual_init !== nothing
+        λ = dual_init
     end
     x = x₀
     γ = step_size
@@ -105,10 +128,10 @@ function ec_uzawa(f, h, x₀, num_constraints; step_size=0.001, max_iters=10000,
     return x,λ
 end
 
-function uzawa(f,g, x₀, num_constraints; step_size=0.001, max_iters=10000, stopping_criterion=0.0001, μ₀=nothing)
+function uzawa(f,g, x₀, num_constraints; step_size=0.001, max_iters=10000, stopping_criterion=0.0001, dual_init=nothing)
     μ = zeros(num_constraints)
-    if μ₀ !== nothing
-        μ = μ₀
+    if dual_init !== nothing
+        μ = dual_init
     end
     x = x₀
     γ = step_size
