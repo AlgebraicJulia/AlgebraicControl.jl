@@ -37,11 +37,12 @@ constraints(p::IneqConstrainedProb) = p.g
 
 
 # "Open" a problem by making it responsive to inputs
-function open(p::EqConstrainedProb) 
+function open(p::EqConstrainedProb; para=0) 
     m = p.h.codom
     n = p.f.dom
+    n_x = n - para
     return (λ,u) -> EqConstrainedProb(
-        SmoothFunction(n, 1, x -> p.f(x) - λ'*x), 
+        SmoothFunction(n, 1, x -> p.f(x) - λ'*x[1:n_x]), 
         SmoothFunction(n, m, x -> p.h(x) - u))
 end
 

@@ -1,23 +1,26 @@
 module Optimizers
 
-export optimize, OpenOptimizer, CompositeOptimizer, forward, backward!,
-    primal_value, dual_value, params, compose
+export optimize, optimize!, OpenOptimizer, CompositeOptimizer, forward, backward!,
+    primal_value, dual_value, params, compose, primal_values
 
 using ..Problems
 using ..LensCats
 using Zygote
 
+global debug = false
+
 mutable struct OpenOptimizer
     dom::Int
     codom::Int
     state::Vector{Vector} # (prev_x0, prev_λ0, λ)
+    para::Int
     p::Function
 end
-function OpenOptimizer(p::Problem)
-    cd = objective(p).dom
+function OpenOptimizer(p::Problem; para=0)
+    cd = objective(p).dom-para
     d = constraints(p).codom
-    state = [zeros(cd), zeros(d), zeros(cd)]
-    return OpenOptimizer(d, cd, state, Problems.open(p))
+    state = [zeros(cd+para), zeros(d), zeros(cd)]
+    return OpenOptimizer(d, cd, state, para, Problems.open(p, para=para))
 end
 primal_value(o::OpenOptimizer) = o.state[1]
 dual_value(o::OpenOptimizer) = o.state[2]
@@ -71,9 +74,17 @@ function backward!(os::CompositeOptimizer, u, λ)
     end=#
 
     for (o,x) in zip(reverse(os.os), reverse(xs))
-        λ = backward!(o, x, λ)
+        λ = backward!(o, x[1:end-o.para], λ)
     end
     return λ
+end
+
+function optimize!(os::CompositeOptimizer; iters=10)
+    m = os.os[1].dom
+    n = os.os[end].codom
+    for i in 1:iters
+        backward!(os, zeros(m), zeros(n))
+    end
 end
 
 function optimize(p::UnconstrainedProb, x₀; kwargs...)
@@ -116,6 +127,12 @@ function ec_uzawa(f, h, x₀, num_constraints; step_size=0.001, max_iters=10000,
     ϵ = stopping_criterion
     m = num_constraints
     for i in 1:max_iters
+        if debug
+            println("Iteration $i")
+            println("x = $x")
+            println(gradient(f, x)[1])
+            println(jacobian(h,x)[1])
+        end
         x_new = x - γ*(gradient(f, x)[1] + jacobian(h, x)[1]'*λ)
         λ_new = λ + γ*h(x)
         if abs(f(x_new) - f(x)) < ϵ && reduce(&, repeat([-tol], m) .< h(x) .< repeat([tol], m))
