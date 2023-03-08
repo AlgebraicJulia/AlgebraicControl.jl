@@ -12,8 +12,8 @@ mutable struct ParaOptimizer
     dom::Int
     codom::Int
     para::Int
-    warm_starts::Vector{Vector} # {prev_u0, prev_x0, prev_λ0}
-    state::Vector
+    warm_starts::Vector{Vector{Float64}} # {prev_u0, prev_x0, prev_λ0}
+    state::Vector{Float64}
     p::Function
 end
 function ParaOptimizer(f::ParaFunction, h::ParaFunction)
@@ -64,22 +64,36 @@ function forward(o::ParaOptimizer, y::Vector)
     return optimize(prob, vcat(o.warm_starts[1], o.warm_starts[2]); dual_init=o.warm_starts[3])[1][o.para+1:end]
 end
 
+function forward!(o::ParaOptimizer, y::Vector{Float64})
+    prob = o.p(o.state, y)
+    res, λ = optimize(prob, vcat(o.warm_starts[1], o.warm_starts[2]); dual_init=o.warm_starts[3])
+    u = res[1:o.para]
+    x = res[o.para+1:end]
+    o.warm_starts = [u,x,λ]
+    return x
+end
+
+
 function backward!(o::ParaOptimizer, y::Vector, λ::Vector)
-    length(y) == o.dom || error("Type error, input to backward! not domain type")
-    length(λ) == o.codom || error("Type error, input to backward! not param type")
+    #length(y) == o.dom || error("Type error, input to backward! not domain type")
+    #length(λ) == o.codom || error("Type error, input to backward! not param type")
     o.state = λ
     prob = o.p(o.state, y)
     res_x, res_λ = optimize(prob, vcat(o.warm_starts[1], o.warm_starts[2]); dual_init=o.warm_starts[3])
     u = res_x[1:o.para]
     x = res_x[o.para+1:end]
-    length(x) == o.codom || error("Type error, result doesn't match codom type")
+    #length(x) == o.codom || error("Type error, result doesn't match codom type")
     o.warm_starts = [u,x,res_λ]
     return res_λ
 end
 
 function forward(os::CompositeParaOptimizer, y::Vector)
     length(y) == dom(os) || error("Type error, input to forward not domain type")
-    reduce((x,o) -> forward(o,x), os; init=y)
+    reduce((x,o) -> forward(o,x), os.os; init=y)
+end
+
+function forward!(os::CompositeParaOptimizer, y::Vector)
+    reduce((x,o) -> forward!(o,x), os.os; init=y)
 end
 
 function backward!(os::CompositeParaOptimizer, y::Vector, λ::Vector)
@@ -97,6 +111,7 @@ function backward!(os::CompositeParaOptimizer, y::Vector, λ::Vector)
 end
 
 function optimize!(o::CompositeParaOptimizer, y::Vector, λ::Vector; num_iters=10)
+    forward!(o, y)
     for i in 1:num_iters
         backward!(o, y, λ)
     end

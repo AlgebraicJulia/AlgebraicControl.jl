@@ -62,7 +62,7 @@ function backward!(o::OpenOptimizer, u, λ; kwargs...)
 end
 
 function forward(os::CompositeOptimizer, u)
-    reduce((x,o) -> forward(o, x), os; init=u)
+    reduce((x,o) -> forward(o, x), os, init=u)
 end
 
 function backward!(os::CompositeOptimizer, u, λ)

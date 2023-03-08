@@ -34,7 +34,7 @@ o3 = ParaOptimizer(f, h)
 
 os = compose(compose(o1,o2), o3)
 
-@time optimize!(os, ones(5), zeros(5), num_iters=10)
+@time optimize!(os, ones(5), zeros(5), num_iters=15)
 
 u1 = param_value(os.os[1])
 u2 = param_value(os.os[2])
