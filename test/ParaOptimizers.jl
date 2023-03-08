@@ -13,11 +13,13 @@ f = ParaFunction(3,1,2,(u,x) -> x'*Q*x + u'*R*u)
 h = ParaFunction(3,3,2,(u,x) -> A*x + B*u)
 o1 = ParaOptimizer(f, h)
 o2 = ParaOptimizer(f, h)
+o3 = ParaOptimizer(f, h)
 
 #x = forward(o, ones(3))
 #λ = backward!(o, ones(3), zeros(3))
 
-os = compose(o1,o2)
+os = compose(compose(o1,o2), o3)
+
 
 backward!(os, ones(3), zeros(3))
 backward!(os, ones(3), zeros(3))
