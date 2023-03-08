@@ -1,7 +1,7 @@
 module Optimizers
 
 export optimize, optimize!, OpenOptimizer, CompositeOptimizer, forward, backward!,
-    primal_value, dual_value, params, compose, primal_values
+    primal_value, dual_value, params, compose, primal_values, ec_uzawa
 
 using ..Problems
 using ..LensCats
