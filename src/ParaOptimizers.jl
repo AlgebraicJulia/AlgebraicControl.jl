@@ -1,9 +1,10 @@
 module ParaOptimizers
 
-export ParaOptimizer
+export ParaOptimizer, param_value, CompositeParaOptimizer
 
 using ..Optimizers
-import ..Optimizers: optimize, forward, backward!, compose
+import ..Optimizers: optimize, forward, backward!, compose, primal_value,
+    optimize!
 using ..ParaProbs
 import ..Categories: dom, codom
 
@@ -95,4 +96,10 @@ function backward!(os::CompositeParaOptimizer, y::Vector, λ::Vector)
     return λ_new
 end
 
+function optimize!(o::CompositeParaOptimizer, y::Vector, λ::Vector; num_iters=10)
+    for i in 1:num_iters
+        backward!(o, y, λ)
+    end
 end
+
+end # module

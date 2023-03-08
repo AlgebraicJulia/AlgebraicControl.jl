@@ -117,7 +117,7 @@ function GD(f::Function, x₀::Vector{Float64}; γ=0.001, max_iters=10000, stopp
     return x
 end
 
-function ec_uzawa(f, h, x₀, num_constraints; step_size=0.001, max_iters=10000, stopping_criterion=0.0001, dual_init=nothing, tol=0.00001)
+function ec_uzawa(f, h, x₀, num_constraints; step_size=0.001, max_iters=5000, stopping_criterion=0.0001, dual_init=nothing, tol=0.0001)
     λ = zeros(num_constraints)
     if dual_init !== nothing
         λ = dual_init

@@ -21,6 +21,8 @@ struct ParaFunction
     para::Int
     impl::Function # para × dom → codom
 end
+(f::ParaFunction)(u::Vector{Float64}, x::Vector{Float64}) = f.impl(u,x)
+
 dom(f::ParaFunction) = f.dom
 codom(f::ParaFunction) = f.codom
 param_space(f::ParaFunction) = f.para
