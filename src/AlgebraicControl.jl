@@ -10,5 +10,6 @@ include("Optimizers.jl")
 include("ParaProbs.jl")
 include("ParaOptimizers.jl")
 include("LQR.jl")
+include("ParaConvCat.jl")
 
 end # module AlgebraicControl
