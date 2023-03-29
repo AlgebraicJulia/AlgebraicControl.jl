@@ -11,5 +11,6 @@ include("ParaProbs.jl")
 include("ParaOptimizers.jl")
 include("LQR.jl")
 include("ParaConvCat.jl")
+include("CMPC.jl")
 
 end # module AlgebraicControl

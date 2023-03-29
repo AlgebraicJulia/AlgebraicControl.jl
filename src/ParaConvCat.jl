@@ -1,6 +1,6 @@
 module ParaConvCat
 
-export ConvexBifunction, to_problem, OpenParaConvexBifunction, ParaConv
+export ConvexBifunction, to_problem, OpenParaConvexBifunction, ParaConv, to_cvx
 
 using ..Categories
 import ..Categories: dom, codom, id, compose
@@ -44,6 +44,11 @@ function to_problem(F::ConvexBifunction)::Problem
     else
         return minimize(F.obj, F.cons)
     end
+end
+
+function to_cvx(F::OpenParaConvexBifunction, args...)
+    bf = F(args...)
+    return to_problem(bf)
 end
 
 struct OpenParaConvexBifunction
