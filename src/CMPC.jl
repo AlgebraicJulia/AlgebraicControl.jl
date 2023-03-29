@@ -28,12 +28,22 @@ function one_step_bifunction(f::Function,g::Function,A,B)
     return OpenParaConvexBifunction(n,n,[m],impl)
 end
 
+function one_step_bifunction(x_dim, u_dim, f::Function,g::Function,h::Function)
+    impl = (u1,x1,x2) -> ConvexBifunction(
+        f(u1[1],x1),
+        vcat(g(u1[1],x1), x2 == h(u1[1],x1))
+    )
+    return OpenParaConvexBifunction(x_dim,x_dim,[u_dim],impl)
+end
+
 function MPC_bifunction(one_step::OpenParaConvexBifunction, N::Int)
     res = one_step
-    for i in 1:N-1
+    for i in 1:N-2
         res = compose(ParaConv(), res, one_step)
     end
     return res
 end
 
+
 end
+
