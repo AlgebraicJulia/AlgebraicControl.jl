@@ -6,33 +6,6 @@ using ..Categories
 import ..Categories: dom, codom, id, compose
 using Convex
 
-#=struct ParaFunction
-    dom::Int
-    codom::Int
-    para::Int
-    impl::Function
-end
-
-struct ParaConvexBifunction
-    dom::Int
-    codom::Int
-    para::Int
-    f::ParaFunction # f(u,x1,x2) Objective function
-    g::ParaFunction # g(u,x1,x2) <= 0 Inequality constraints
-    h::ParaFunction # h(u,x1,x2) == 0 Equality constraints
-end
-
-struct ParaConv <: Category{Int, ConvexBifunction} end
-
-dom(::ParaConv, F::ParaConvexBifunction) = F.dom
-codom(::ParaConv, F::ParaConvexBifunction) = F.codom
-compose(c::ParaConv, F::ParaConvexBifunction, G::ParaConvexBifunction) = begin
-    codom(c, F) == dom(c, G) || error("Domain mismatch in bifunction composition")
-
-end=#
-
-
-
 struct ConvexBifunction
     obj::Convex.AbstractExpr
     cons::Vector{Constraint}
@@ -57,6 +30,27 @@ struct OpenParaConvexBifunction
     para::Vector{Int}
     impl::Function #param_vars × dom_var × codom_var ⇢ ConvexBifunction
 end
+
+
+(F::OpenParaConvexBifunction)(ps::Vector{Variable}, x::Vector, y::Vector) = begin
+    x_var = Variable(length(x))
+    fix!(x_var, x)
+    F(ps, x_var, y)
+end
+
+(F::OpenParaConvexBifunction)(ps::Vector{Variable}, x::Vector, y::Variable) = begin
+    x_var = Variable(length(x))
+    fix!(x_var, x)
+    F(ps, x_var, y)
+end
+
+(F::OpenParaConvexBifunction)(ps::Vector{Variable}, x::Variable, y::Vector) = begin
+    y_var = Variable(length(y))
+    fix!(y_var, y)
+    F(ps, x, y_var)
+end
+
+
 (F::OpenParaConvexBifunction)(ps::Vector{Variable}, x::Variable, y::Variable) =
     F.impl(ps, x, y)
 
