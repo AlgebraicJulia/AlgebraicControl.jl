@@ -1,7 +1,6 @@
 using AlgebraicControl.ParaConvCat
 using Test
 using Convex
-using Ipopt
 using LinearAlgebra
 using AlgebraicControl.Categories
 using SCS
@@ -31,9 +30,33 @@ u1 = Variable(8)
 x1 = Variable(10)
 x2 = Variable(10)
 FCB = F([u1], x1, x2)
-
 prob = to_problem(FCB)
-solve!(prob, SCS.Optimizer)
+solve!(prob, SCS.Optimizer; silent_solver=true)
+o1 = prob.optval
+
+# Test unitality
+F_id = compose(ParaConv(), F, id(ParaConv(), 10))
+u1 = Variable(8)
+x1 = Variable(10)
+x2 = Variable(10)
+FCB = F_id([u1], x1, x2)
+prob = to_problem(FCB)
+solve!(prob, SCS.Optimizer; silent_solver=true)
+o2 = prob.optval
+@test o1 ≈ o2
+
+id_F = compose(ParaConv(), id(ParaConv(), 10), F)
+u1 = Variable(8)
+x1 = Variable(10)
+x2 = Variable(10)
+FCB = id_F([u1], x1, x2)
+prob = to_problem(FCB)
+solve!(prob, SCS.Optimizer; silent_solver=true)
+o2 = prob.optval
+@test o1 ≈ o2
+
+
+
 
 FF = compose(ParaConv(), F, F)
 
@@ -48,7 +71,7 @@ prob = to_problem(FFCB)
 fix!(x1, repeat([5],10))
 fix!(x3, zeros(10))
 
-solve!(prob, SCS.Optimizer)
+solve!(prob, SCS.Optimizer; silent_solver=true)
 o1 = prob.optval
 
 x1_val = evaluate(x1)
@@ -70,7 +93,7 @@ true_prob = minimize(
 fix!(tx1, repeat([5],10))
 fix!(tx3, zeros(10))
 
-solve!(true_prob, SCS.Optimizer)
+solve!(true_prob, SCS.Optimizer, silent_solver=true)
 o2 = true_prob.optval
 
 tx1_val = evaluate(tx1)
@@ -80,6 +103,12 @@ tu2_val = evaluate(tu2)
 tx3_val = A*tx2_val + B*tu2_val
 
 @test o1 == o2
+@test x1_val == tx1_val
+@test x2_val == tx2_val
+@test x3_val == tx3_val
+@test u1_val == tu1_val
+@test u2_val == tu2_val
+
 
 
 

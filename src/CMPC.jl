@@ -2,14 +2,10 @@ module CMPC
 
 export one_step_bifunction, MPC_bifunction
 
-using JuMP
-using Ipopt
 using LinearAlgebra
 using Convex
 using ..ParaConvCat
 using ..Categories
-
-
 
 function one_step_bifunction(f::Function,g::Function,A,B)
     n = size(A)[1]

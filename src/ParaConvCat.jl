@@ -19,10 +19,6 @@ function to_problem(F::ConvexBifunction)::Problem
     end
 end
 
-function to_cvx(F::OpenParaConvexBifunction, args...)
-    bf = F(args...)
-    return to_problem(bf)
-end
 
 struct OpenParaConvexBifunction
     dom::Int
@@ -54,6 +50,12 @@ end
 (F::OpenParaConvexBifunction)(ps::Vector{Variable}, x::Variable, y::Variable) =
     F.impl(ps, x, y)
 
+
+function to_cvx(F::OpenParaConvexBifunction, args...)
+    bf = F(args...)
+    return to_problem(bf)
+end
+
 struct ParaConv <: Category{Int, OpenParaConvexBifunction} end
 
 dom(::ParaConv, F::OpenParaConvexBifunction) = F.dom
@@ -61,7 +63,7 @@ codom(::ParaConv, F::OpenParaConvexBifunction) = F.codom
 id(::ParaConv, X::Int) = begin
     impl = (_, x1, x2) ->
         ConvexBifunction(Constant(0), [x1 == x2])
-    return OpenParaConvexBifunction(X, X, 0, impl)
+    return OpenParaConvexBifunction(X, X, Variable[], impl)
 end
 compose(::ParaConv, F::OpenParaConvexBifunction, G::OpenParaConvexBifunction) = begin
     @assert codom(ParaConv(), F) == dom(ParaConv(), G)
@@ -69,7 +71,11 @@ compose(::ParaConv, F::OpenParaConvexBifunction, G::OpenParaConvexBifunction) = 
     F_nparams = length(F.para)
     G_nparams = length(G.para)
     impl = (ps, x, z) -> begin
-        FCB = F(ps[1:F_nparams], x, y)
+        if F_nparams > 0
+            FCB = F(ps[1:F_nparams], x, y)
+        else
+            FCB = F(Variable[], x, y)
+        end
         GCB = G(ps[F_nparams+1:end], y, z)
         return ConvexBifunction(FCB.obj + GCB.obj, vcat(FCB.cons, GCB.cons))
     end
