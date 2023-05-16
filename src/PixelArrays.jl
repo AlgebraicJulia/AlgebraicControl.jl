@@ -2,9 +2,6 @@ using Plots
 import Plots: plot
 import Base: *
 
-r1(x,w) = x^2 - w
-r2(w,y) = 1 - y^2 - w
-
 # Super naive implementations for now!
 struct PixelMatrix
     x_res::Int
@@ -54,3 +51,13 @@ function plot(pm::PixelMatrix)
     end
     return scatter(xs,ys)
 end
+
+# Example usage
+r1(x,w) = x^2 - w
+r2(w,y) = 1 - y^2 - w
+
+pm1 = PixelMatrix(100,100,-1.5=>1.5,-1.5=>1.5,r1)
+pm2 = PixelMatrix(100,100,-1.5=>1.5,-1.5=>1.5,r2)
+
+res = pm1*pm2
+plot(res)
