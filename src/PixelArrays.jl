@@ -2,6 +2,8 @@ using Plots
 import Plots: plot
 using LinearAlgebra
 import Base: *, +
+using Convex
+using GLPK
 
 struct MPCBifunction
     state_space::Int
@@ -46,7 +48,7 @@ end
 
 +(p1::Pair{Float64}, p2::Pair{Float64}) = (p1[1] + p2[1]) => (p1[2] + p2[2])
 
-function evaluate_pixel(p::Pixel, f::MPCBifunction; ϵ=0.1)
+function evaluate_pixel(p::Pixel, f::MPCBifunction; ϵ=100)
     # Get centroid of pixel
     centroid = Float64[]
     for (lb,ub) in p.bounds
@@ -134,14 +136,45 @@ res = pm1*pm2
 plot(res)
 
 # Example bifunction usage
-f = MPCBifunction(1,1,(x,u)->x[1]^2 + u[1]^2, (x,u)->[5*x[1] + u[1]])
-p = Pack(3, repeat([-1.5],3), repeat([1.5],3), repeat([100],3))
+resolution = 30
+f = MPCBifunction(1,1,(x,u)->x[1]^2 + u[1]^2, (x,u)->[x[1] + u[1]])
+p = Pack(3, repeat([-1.5],3), repeat([1.5],3), repeat([resolution],3))
 
-for e in entries(p)
+#=for e in entries(p)
     pix = Pixel(p, collect(e))
-    val = evaluate_pixel(pix, f, ϵ=0.015)
+    val = evaluate_pixel(pix, f, ϵ=0.1)
     if val != Inf
         println(pix)
         println(val)
     end
+end=#
+
+# Example MPC array multiplication
+# Assumes every entry has the same resolution (i.e. all arrays are (hyper)cubes)
+function eval_composite(p::Pack, f::MPCBifunction, x0idx, u0idx, x2idx)
+    res = Inf
+    for (j,k) in Iterators.product(1:p.resolution[1], 1:p.resolution[1])
+        pix1 = Pixel(p, [x0idx, u0idx, j])
+        pix2 = Pixel(p, [j, k, x2idx])
+        res = min(res, evaluate_pixel(pix1, f) + evaluate_pixel(pix2, f))
+    end
+    return res
 end
+
+function test()
+    m = Inf
+    pix_star = Pixel([])
+    for (x0idx, u0idx, x2idx) in Iterators.product(1:resolution, 1:resolution, 1:resolution)
+        m_new = eval_composite(p, f, x0idx, u0idx, x2idx)
+        if m_new < m
+            m = m_new
+            pix_star = Pixel(p, [x0idx, u0idx, x2idx])
+        end
+    end
+end
+
+test()
+
+println(m)
+println(pix_star)
+
