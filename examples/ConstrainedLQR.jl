@@ -1,5 +1,5 @@
 using AlgebraicControl.CMPC
-#using AlgebraicControl.ParaConvCat
+using AlgebraicControl.ParaConvCat
 using SCS
 using Convex
 
@@ -42,23 +42,23 @@ end
 xs = Variable(2, N)
 us = Variable(1, N-1)
 
-constraints = Constraint[
+constraints2 = Constraint[
     xs[:, i+1] == A*xs[:,i] + B*us[:,i] for i in 1:N-1
 ]
 
 for i in 1:N-1
-    push!(constraints, xs[:,i][1] <= 3)
-    push!(constraints, xs[:,i][1] >= -3)
-    push!(constraints, xs[:,i][2] <= 2)
-    push!(constraints, xs[:,i][2] >= -2)
-    push!(constraints, us[:,i] <= 1)
-    push!(constraints, us[:,i] >= -1)
+    push!(constraints2, xs[:,i][1] <= 3)
+    push!(constraints2, xs[:,i][1] >= -3)
+    push!(constraints2, xs[:,i][2] <= 2)
+    push!(constraints2, xs[:,i][2] >= -2)
+    push!(constraints2, us[:,i] <= 1)
+    push!(constraints2, us[:,i] >= -1)
 end
 
-push!(constraints, xs[:,1] == x₀)
+push!(constraints2, xs[:,1] == x₀)
 
 objective = sum([quadform(xs[:,i], Q) + R*square(us[:,i]) for i in 1:N-1])
 
-prob = minimize(objective, constraints)
+prob = minimize(objective, constraints2)
 
 solve!(prob, SCS.Optimizer)
