@@ -48,7 +48,7 @@ end
 
 +(p1::Pair{Float64}, p2::Pair{Float64}) = (p1[1] + p2[1]) => (p1[2] + p2[2])
 
-function evaluate_pixel(p::Pixel, f::MPCBifunction; ϵ=100)
+function evaluate_pixel(p::Pixel, f::MPCBifunction; ϵ=.1)
     # Get centroid of pixel
     centroid = Float64[]
     for (lb,ub) in p.bounds
@@ -136,18 +136,31 @@ res = pm1*pm2
 plot(res)
 
 # Example bifunction usage
-resolution = 30
+resolution = 8
 f = MPCBifunction(1,1,(x,u)->x[1]^2 + u[1]^2, (x,u)->[x[1] + u[1]])
-p = Pack(3, repeat([-1.5],3), repeat([1.5],3), repeat([resolution],3))
+p = Pack(3, repeat([-2.0],3), repeat([2.0],3), repeat([resolution],3))
 
-#=for e in entries(p)
-    pix = Pixel(p, collect(e))
-    val = evaluate_pixel(pix, f, ϵ=0.1)
-    if val != Inf
-        println(pix)
-        println(val)
+res_mat = zeros(resolution, resolution)
+for e in Iterators.product(1:resolution, 1:resolution)#entries(p)
+    pix = Pixel(p, vcat([resolution], collect(e)))
+    val = evaluate_pixel(pix, f, ϵ=1)
+    #if val != Inf
+        #println(pix)
+        #println(val)
+    #end
+    res_mat[e[1],e[2]] = val
+end
+#show(res_mat)
+function square_mat(m)
+    res_mat_squared = zeros(resolution, resolution)
+    for (i,j) in Iterators.product(1:resolution, 1:resolution)
+        row = m[i,:]
+        col = m[:,j]
+        res_mat_squared[i,j] = min((row + col)...)
     end
-end=#
+    return res_mat_squared
+end
+res_squared = square_mat(res_mat)
 
 # Example MPC array multiplication
 # Assumes every entry has the same resolution (i.e. all arrays are (hyper)cubes)
