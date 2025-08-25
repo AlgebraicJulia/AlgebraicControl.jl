@@ -4,11 +4,7 @@ authors = ["tylerhanks <teh.hanks@gmail.com>"]
 version = "0.1.0"
 
 [deps]
-Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
+AlgebraicOptimization = "a72ceada-00ec-4ad9-90d3-37b40eaed052"
 Convex = "f65535da-76fb-5f13-bab9-19810c17039a"
-GLPK = "60bf3e95-4087-53dc-ae20-288a0d20c6a6"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 SCS = "c946c3f1-0d1f-5ce8-9dea-7daa1f7e2d13"
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
