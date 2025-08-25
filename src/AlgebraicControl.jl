@@ -9,6 +9,8 @@ using Convex
 using SCS
 using LinearAlgebra
 
+import ProximalOperators: prox, prox!
+
 struct LinearSystem
     A::Matrix{Float64}
     B::Matrix{Float64}
@@ -68,20 +70,21 @@ function set_x0!(P::ProxableMPCProgram, x0_val::Vector{Float64})
     fix!(P.input_var, x0_val)
 end
 
-function prox(P::ProxableMPCProgram, x::Vector{Float64}, γ=1.0)
+function prox(P::ProxableMPCProgram, x, γ=1.0)
     #fix!(P.y, x)
     #fix!(P.γ, γ)
     prob = P.program(x, γ)
     solve!(prob, SCS.Optimizer; silent=true)
-    return evaluate(P.output_var)
+    return evaluate(P.output_var), prob.optval
 end
 
-function prox!(y, P::ProxableMPCProgram, x::Vector{Float64}, γ=1.0)
+function prox!(y, P::ProxableMPCProgram, x, γ=1.0)
     #fix!(P.y, x)
     #fix!(P.γ[], γ)
     prob = P.program(x, γ)
-    solve!(prob, SCS.Optimizer; silent_solver=true)
+    solve!(prob, SCS.Optimizer; silent=true)
     copy!(y, evaluate(P.output_var))
+    return prob.optval
 end
 
 

@@ -7,4 +7,10 @@ version = "0.1.0"
 AlgebraicOptimization = "a72ceada-00ec-4ad9-90d3-37b40eaed052"
 Convex = "f65535da-76fb-5f13-bab9-19810c17039a"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+ProximalAlgorithms = "140ffc9f-1907-541a-a177-7475e0a401e9"
+ProximalOperators = "a725b495-10eb-56fe-b38b-717eba820537"
 SCS = "c946c3f1-0d1f-5ce8-9dea-7daa1f7e2d13"
+
+[compat]
+ProximalAlgorithms = "0.5.4"
+ProximalOperators = "0.16.1"
