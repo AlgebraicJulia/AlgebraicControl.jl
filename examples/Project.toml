@@ -1,0 +1,5 @@
+[deps]
+AlgebraicControl = "18d58c96-aab3-4c1a-b16d-46236d122ca7"
+
+[sources]
+AlgebraicControl = {path = "../"}

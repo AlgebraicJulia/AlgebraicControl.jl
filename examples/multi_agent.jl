@@ -44,29 +44,32 @@ p = HomologicalProgram([agent1_obj, agent2_obj, agent3_obj], s)
 solve(p, ProximalAlgorithms.DouglasRachford(maxit=10))
 
 sim_length = 100
+function run_sim()
+    for i in 1:sim_length
+        solve(p, ProximalAlgorithms.DouglasRachford(maxit=10))
+        x1_curr = evaluate(agent1_obj.input_var)
+        x2_curr = evaluate(agent2_obj.input_var)
+        x3_curr = evaluate(agent3_obj.input_var)
 
-for i in 1:sim_length
-    solve(p, ProximalAlgorithms.DouglasRachford(maxit=10))
-    x1_curr = evaluate(agent1_obj.input_var)
-    x2_curr = evaluate(agent2_obj.input_var)
-    x3_curr = evaluate(agent3_obj.input_var)
+        u1_curr = evaluate(agent1_obj.control_vars[1])
+        u2_curr = evaluate(agent2_obj.control_vars[1])
+        u3_curr = evaluate(agent3_obj.control_vars[1])
 
-    u1_curr = evaluate(agent1_obj.control_vars[1])
-    u2_curr = evaluate(agent2_obj.control_vars[1])
-    u3_curr = evaluate(agent3_obj.control_vars[1])
+        x1_next = sys(x1_curr, u1_curr)
+        x2_next = sys(x2_curr, u2_curr)
+        x3_next = sys(x3_curr, u3_curr)
 
-    x1_next = sys(x1_curr, u1_curr)
-    x2_next = sys(x2_curr, u2_curr)
-    x3_next = sys(x3_curr, u3_curr)
-
-    set_x0!(agent1_obj, x1_next)
-    set_x0!(agent2_obj, x2_next)
-    set_x0!(agent3_obj, x3_next)
+        set_x0!(agent1_obj, x1_next)
+        set_x0!(agent2_obj, x2_next)
+        set_x0!(agent3_obj, x3_next)
+    end
 end
 
-x1_f = evaluate(agent1_obj.input_var)
-x2_f = evaluate(agent2_obj.input_var)
-x3_f = evaluate(agent3_obj.input_var)
+@time run_sim();
+
+x1_f = evaluate(agent1_obj.input_var);
+x2_f = evaluate(agent2_obj.input_var);
+x3_f = evaluate(agent3_obj.input_var);
 
 
 
